@@ -11,6 +11,8 @@ Available IBM Cloud data centers are listed in the section below and can be chan
 
 You will need to [Setup up IBM Cloud provider credentials](#setting-up-provider-credentials), please see the section titled "[Setting up Provider Credentials](#setting-up-provider-credentials)" for help.
 
+Additionally you will need the IBM Terraform binary. You can obtain this binary by visiting [github.com/IBM-Bluemix/schematics-onboarding](https://github.com/IBM-Bluemix/schematics-onboarding#ibm-bluemix-schematics-service-on-boarding).
+
 To run this project execute the following steps:
 
 - Change the `public_key` variable value in `terraform.tfvars` to some public key material of your own (see ["Generating a new SSH key and adding it to the ssh-agent"](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/)).
