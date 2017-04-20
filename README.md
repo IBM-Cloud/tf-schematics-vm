@@ -5,7 +5,7 @@ A very simple Terraform configuration for a single virtual machine running a web
 
 This is not a module, it is a terraform configuration that can be cloned to be used.
 
-Variables can be defined or overwritten using `terraform.tfvars`. Currently `public_key` are being defined and overwritten (you should ideally supply your own `public_key` material).
+Variables can be defined or overwritten using `terraform.tfvars`. Currently `public_key` is being defined and overwritten (you should ideally supply your own `public_key` material).
 
 Available IBM Cloud data centers are listed in the section below and can be changed from the default `dal06` by overwriting the default in `terraform.tfvars` using `datacenter = <new-value>`.
 
