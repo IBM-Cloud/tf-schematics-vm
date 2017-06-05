@@ -33,8 +33,8 @@ resource "ibmcloud_infra_virtual_guest" "node" {
   # To manually scale out horizonatally this value can be adjusted
   # Will create this number of nodes using these parameters
   count                = "${var.node_count}"
-  hostname             = "${var.node_domain}-${count.index+1}"
-  domain               = "${var.node_domain}"
+  hostname             = "${var.node_name}-${count.index+1}"
+  domain               = "${var.node_name}.com"
   os_reference_code    = "${var.node_operating_system}"
   datacenter           = "${var.datacenter}"
   private_network_only = false
@@ -104,9 +104,9 @@ variable "node_operating_system" {
   default = "UBUNTU_LATEST"
   description = "The target operating system for the virtual machines."
 }
-variable "node_domain" {
+variable "node_name" {
   default = "schematicsdemo"
-  description = "The domain and hostname to apply to the virtual machines."
+  description = "The name to use for the domain and hostname to apply to the virtual machines."
 }
 variable "node_cores" {
   default = 1
