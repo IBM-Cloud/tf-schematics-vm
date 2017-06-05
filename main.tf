@@ -1,125 +1,115 @@
 ##############################################################################
-# IBM Cloud Provider
-# Provider details available at
-# http://ibmcloudterraformdocs.chriskelner.com/docs/providers/ibmcloud/index.html
+# Configures the IBM Cloud provider
+# https://ibm-bluemix.github.io/tf-ibm-docs/
 ##############################################################################
-# See the README for details on ways to supply these values
 provider "ibmcloud" {
-  ibmid                    = "${var.ibmid}"
-  ibmid_password           = "${var.ibmidpw}"
-  softlayer_account_number = "${var.slaccountnum}"
+  bluemix_api_key    = "${var.ibmcloud_bx_api_key}"
+  softlayer_username = "${var.ibmcloud_sl_username}"
+  softlayer_api_key  = "${var.ibmcloud_sl_api_key}"
 }
-
-##############################################################################
-# IBM SSH Key: For connecting to VMs
-# http://ibmcloudterraformdocs.chriskelner.com/docs/providers/ibmcloud/r/infra_ssh_key.html
-##############################################################################
+#############################################################################
+# Require terraform 0.9.3 or greater to run this template
+# https://www.terraform.io/docs/configuration/terraform.html
+#############################################################################
+terraform {
+  required_version = ">= 0.9.3"
+}
+#############################################################################
+# SSH Key
+# Create an SSH key using user supplied public key material for connecting
+# to the virtual machines created
+# https://ibm-bluemix.github.io/tf-ibm-docs/r/infra_ssh_key.html
+#############################################################################
 resource "ibmcloud_infra_ssh_key" "ssh_key" {
-  label = "interconnect-2017"
-  notes = "interconnect-2017"
-  # Public key, so this is completely safe
+  label      = "${var.key_label}"
+  notes      = "${var.key_note}"
   public_key = "${var.public_key}"
 }
-
 ##############################################################################
-# IBM Virtual Guests -- Web Resource Definition
-# http://ibmcloudterraformdocs.chriskelner.com/docs/providers/ibmcloud/r/infra_virtual_guest.html
+# IBM Virtual Guests
+# https://ibm-bluemix.github.io/tf-ibm-docs/r/infra_virtual_guest.html
 ##############################################################################
-resource "ibmcloud_infra_virtual_guest" "web_node" {
-  # number of nodes to create, will iterate over this resource
+resource "ibmcloud_infra_virtual_guest" "node" {
+  # To manually scale out horizonatally this value can be adjusted
+  # Will create this number of nodes using these parameters
   count                = "${var.node_count}"
-  # demo hostname and domain
-  hostname             = "interconnect2017-demo-web-node-${count.index+1}"
-  domain               = "interconnect2017demo.com"
-  # the operating system to use for the VM
-  os_reference_code    = "${var.web_operating_system}"
-  # the datacenter to deploy the VM to
+  hostname             = "${var.node_domain}-${count.index+1}"
+  domain               = "${var.node_domain}"
+  os_reference_code    = "${var.node_operating_system}"
   datacenter           = "${var.datacenter}"
   private_network_only = false
-  cores                = "${var.vm_cores}"
-  memory               = "${var.vm_memory}"
+  cores                = "${var.node_cores}"
+  memory               = "${var.node_memory}"
   local_disk           = true
   ssh_key_ids = [
     "${ibmcloud_infra_ssh_key.ssh_key.id}"
   ]
-  # Installs nginx web server on our VM via SSH
-  provisioner "remote-exec" {
-    inline = [
-      "apt-get update -y",
-       # Install nginx
-      "apt-get install --yes --force-yes nginx",
-      # Overwrite default nginx welcome page w/ mac address of VM NIC
-      "echo \"<h1>I am $(cat /sys/class/net/eth0/address)</h1>\" > \"/var/www/html/index.nginx-debian.html\""
-    ]
-  }
-  # applys tags to the VM
-  tags = "${var.vm_tags}"
+  post_install_script_uri = "https://raw.githubusercontent.com/IBM-Bluemix/tf-schematics-vm/master/post-install.sh"
+  tags = "${var.node_tags}"
 }
 
 ##############################################################################
 # Outputs: printed at the end of terraform apply
 ##############################################################################
-output "node_id" {
-    value = ["${ibmcloud_infra_virtual_guest.web_node.id}"]
+output "node_ids" {
+    value = ["${ibmcloud_infra_virtual_guest.node.*.id}"]
 }
-output "node_ip_address" {
-    value = ["${ibmcloud_infra_virtual_guest.web_node.ipv4_address}"]
+output "node_ip_addresses" {
+    value = ["${ibmcloud_infra_virtual_guest.node.*.ipv4_address}"]
 }
 
 ##############################################################################
 # Variables
 ##############################################################################
-# Required for the IBM Cloud provider
-variable ibmid {
+# Required for the IBM Cloud provider for Bluemix resources
+variable "ibmcloud_bx_api_key" {
   type = "string"
-  description = "Your IBM-ID."
+  description = "Your Bluemix API Key."
 }
-# Required for the IBM Cloud provider
-variable ibmidpw {
+# Required for the IBM Cloud provider for Softlayer resources
+variable "ibmcloud_sl_username" {
   type = "string"
-  description = "The password for your IBM-ID."
+  description = "Your Softlayer username."
 }
-# Required to target the correct SL account
-variable slaccountnum {
+# Required for the IBM Cloud provider for Softlayer resources
+variable "ibmcloud_sl_api_key" {
   type = "string"
-  description = "Your Softlayer account number."
+  description = "Your Softlayer API key."
 }
-# The datacenter to deploy to
-variable datacenter {
+variable "datacenter" {
+  type = "string"
   default = "dal06"
+  description = "The target datacenter to deploy virtual machines to."
 }
-# The SSH Key to use on the Nginx virtual machines
-# Defined in terraform.tfvars
-variable public_key {
-  description = "Your public SSH key"
+# The SSH Key public key material to use for the virtual machines
+variable "public_key" {
+  type = "string"
+  description = "Your public SSH key material."
 }
-# The number of web nodes to deploy; You can adjust this number to create more
-# virtual machines in the IBM Cloud; adjusting this number also updates the
-# loadbalancer with the new node
-variable node_count {
+variable "node_count" {
   default = 1
+  description = "The number of virtual machines to create."
 }
-# The target operating system for the web nodes
-variable web_operating_system {
+variable "node_operating_system" {
   default = "UBUNTU_LATEST"
+  description = "The target operating system for the virtual machines."
 }
-# The port that web and the loadbalancer will serve traffic on
-variable port {
-  default = "80"
+variable "node_domain" {
+  default = "schematicsdemo"
+  description = "The domain and hostname to apply to the virtual machines."
 }
-# The number of cores each web virtual guest will recieve
-variable vm_cores {
+variable "node_cores" {
   default = 1
+  description = "The number of cores each web virtual machine will recieve."
 }
-# The amount of memory each web virtual guest will recieve
-variable vm_memory {
+variable "node_memory" {
   default = 1024
+  description = "The amount of memory each web virtual machine will recieve."
 }
-# Tags which will be applied to the web VMs
-variable vm_tags {
+variable "node_tags" {
   default = [
     "nginx",
-    "webserver",
     "schematicsdemo"
   ]
+  description = "Tags which will be applied to the web VMs."
 }
