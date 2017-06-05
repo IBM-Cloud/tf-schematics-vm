@@ -86,6 +86,16 @@ variable "public_key" {
   type = "string"
   description = "Your public SSH key material."
 }
+variable "key_label" {
+  type = "string"
+  default = "schematics-vm-demo"
+  description = "A label (name) for your SSH key."
+}
+variable "key_note" {
+  type = "string"
+  default = "schematics-vm-demo"
+  description = "A note (description) for your SSH key."
+}
 variable "node_count" {
   default = 1
   description = "The number of virtual machines to create."
